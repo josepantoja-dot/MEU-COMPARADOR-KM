@@ -1,56 +1,107 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Comparador de KM", layout="wide")
+# 1. Configurações da Página (Ícone e Layout Largo)
+st.set_page_config(
+    page_title="Frota Inteligente | Comparador KM",
+    page_icon="🚛",
+    layout="wide"
+)
 
-st.title("📊 Comparador de Quilometragem")
-st.markdown("Suba as planilhas para identificar o aumento de KM por ponto de medição.")
+# 2. Estilo CSS Customizado para deixar mais moderno
+st.markdown("""
+    <style>
+    .main {
+        background-color: #f5f7f9;
+    }
+    .stMetric {
+        background-color: #ffffff;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-# --- CONFIGURAÇÃO DAS COLUNAS NA BARRA LATERAL ---
-st.sidebar.header("⚙️ Nomes das Colunas")
-st.sidebar.write("Ajuste se os nomes na sua planilha forem diferentes:")
-col_placa = st.sidebar.text_input("Coluna da Placa", "Placa")
-col_ponto = st.sidebar.text_input("Coluna do Ponto", "Ponto de Medicao")
-col_km = st.sidebar.text_input("Coluna da KM", "Quilometragem")
+# 3. Sidebar (Configurações)
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/2830/2830305.png", width=100)
+    st.title("Configurações")
+    st.info("Ajuste os nomes das colunas conforme seu arquivo.")
+    col_placa = st.text_input("📝 Nome da Coluna Placa", "Placa")
+    col_ponto = st.text_input("📍 Nome da Coluna Ponto", "Ponto de Medicao")
+    col_km = st.text_input("🔢 Nome da Coluna KM", "Quilometragem")
+    st.divider()
+    st.caption("Versão 2.0 - Design Pro")
 
-# --- ÁREA DE UPLOAD ---
-col1, col2 = st.columns(2)
-with col1:
-    file_passado = st.file_uploader("📂 Planilha DIA ANTERIOR", type=['csv', 'xlsx'])
-with col2:
-    file_presente = st.file_uploader("📂 Planilha DIA ATUAL", type=['csv', 'xlsx'])
+# 4. Cabeçalho Principal
+st.title("🚛 Gestão de Frota: Comparativo de Rodagem")
+st.subheader("Análise de variação de quilometragem entre períodos")
 
-# --- LÓGICA DE COMPARAÇÃO ---
+with st.expander("❓ Como utilizar este sistema?"):
+    st.write("""
+        1. Prepare duas planilhas (Excel ou CSV).
+        2. Garanta que ambas tenham as colunas de **Placa** e **Quilometragem**.
+        3. Faça o upload abaixo e veja o resultado instantâneo.
+    """)
+
+# 5. Área de Upload em Cards
+c1, c2 = st.columns(2)
+with c1:
+    st.markdown("### 📅 Período Anterior")
+    file_passado = st.file_uploader("Arraste o arquivo de ONTEM aqui", type=['csv', 'xlsx'], key="passado")
+with c2:
+    st.markdown("### 📅 Período Atual")
+    file_presente = st.file_uploader("Arraste o arquivo de HOJE aqui", type=['csv', 'xlsx'], key="presente")
+
+# 6. Processamento e Visualização
 if file_passado and file_presente:
     try:
-        # Função para ler os arquivos corretamente
-        def ler(file):
-            if file.name.endswith('.csv'): return pd.read_csv(file)
-            return pd.read_excel(file)
+        def carregar(file):
+            return pd.read_excel(file) if file.name.endswith('.xlsx') else pd.read_csv(file)
+        
+        df_a = carregar(file_passado)
+        df_b = carregar(file_presente)
 
-        df_a = ler(file_passado)
-        df_b = ler(file_presente)
+        # Cruzamento de dados
+        df_a_clean = df_a[[col_placa, col_ponto, col_km]].rename(columns={col_km: 'Anterior', col_ponto: 'Ponto'})
+        df_b_clean = df_b[[col_placa, col_km]].rename(columns={col_km: 'Atual'})
+        
+        df_res = pd.merge(df_b_clean, df_a_clean, on=col_placa, how='inner')
+        df_res['Diferença (KM)'] = df_res['Atual'] - df_res['Anterior']
 
-        # Seleciona e renomeia
-        df_a = df_a[[col_placa, col_ponto, col_km]].rename(columns={col_km: 'KM_Anterior', col_ponto: 'Ponto'})
-        df_b = df_b[[col_placa, col_km]].rename(columns={col_km: 'KM_Atual'})
-
-        # Cruza os dados
-        df_final = pd.merge(df_b, df_a, on=col_placa, how='inner')
-        df_final['Aumento_KM'] = df_final['KM_Atual'] - df_final['KM_Anterior']
-
-        # Reordenar para visualização
-        df_final = df_final[[col_placa, 'Ponto', 'KM_Anterior', 'KM_Atual', 'Aumento_KM']]
-
+        # Exibição de Métricas no Topo
         st.divider()
-        st.success("✅ Comparação realizada com sucesso!")
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Veículos Analisados", len(df_res))
+        m2.metric("Total KM Rodados", f"{df_res['Diferença (KM)'].sum():,.0f} km")
+        m3.metric("Média por Veículo", f"{df_res['Diferença (KM)'].mean():,.1f} km")
+        m4.metric("Maior Rodagem", f"{df_res['Diferença (KM)'].max():,.0f} km")
 
-        # Tabela interativa
-        st.dataframe(df_final, use_container_width=True)
+        # Tabela Final
+        st.markdown("### 📋 Relatório Detalhado")
+        
+        # Colorir a coluna de diferença
+        def color_km(val):
+            color = '#ff4b4b' if val < 0 else '#2ecc71'
+            return f'color: {color}; font-weight: bold'
 
-        # Botão de download
-        csv = df_final.to_csv(index=False).encode('utf-8-sig')
-        st.download_button("📥 Baixar Resultado em Excel (CSV)", csv, "comparativo_km.csv", "text/csv")
+        st.dataframe(
+            df_res[[col_placa, 'Ponto', 'Anterior', 'Atual', 'Diferença (KM)']].style.applymap(color_km, subset=['Diferença (KM)']),
+            use_container_width=True,
+            height=400
+        )
+
+        # Download Centralizado
+        st.download_button(
+            label="📥 Baixar Relatório Completo",
+            data=df_res.to_csv(index=False).encode('utf-8-sig'),
+            file_name=f"comparativo_frota_{col_placa}.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
 
     except Exception as e:
-        st.error(f"⚠️ Erro ao processar: Verifique se os nomes das colunas '{col_placa}', '{col_km}' e '{col_ponto}' estão corretos na sua planilha.")
+        st.error(f"⚠️ Verifique se as colunas estão corretas! Erro: {e}")
+else:
+    st.warning("Aguardando o upload das duas planilhas para iniciar a análise.")
