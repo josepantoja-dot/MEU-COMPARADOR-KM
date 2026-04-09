@@ -28,11 +28,14 @@ with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2830/2830305.png", width=100)
     st.title("Configurações")
     st.info("Ajuste os nomes das colunas conforme seu arquivo.")
+    
+    # Aqui mudamos os nomes padrão que aparecem nas caixinhas
     col_placa = st.text_input("📝 Nome da Coluna Placa", "Placa")
-    col_ponto = st.text_input("📍 Nome da Coluna Ponto", "Ponto de Medicao")
-    col_km = st.text_input("🔢 Nome da Coluna KM", "Quilometragem")
+    col_ponto = st.text_input("📍 Nome da Coluna Ponto", "Ponto de Medição")
+    col_km = st.text_input("🔢 Nome da Coluna KM", "Odômetro (KM)")
+    
     st.divider()
-    st.caption("Versão 2.0 - Design Pro")
+    st.caption("Versão 2.1 - Nomes Personalizados")
 
 # 4. Cabeçalho Principal
 st.title("🚛 Gestão de Frota: Comparativo de Rodagem")
