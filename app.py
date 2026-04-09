@@ -1,33 +1,56 @@
-# 1. Upload dos arquivos
-print("Selecione a planilha do DIA PASSADO:")
-upload_passado = files.upload()
-nome_passado = list(upload_passado.keys())[0]
+import streamlit as st
+import pandas as pd
 
-print("\nSelecione a planilha do DIA PRESENTE:")
-upload_presente = files.upload()
-nome_presente = list(upload_presente.keys())[0]
+st.set_page_config(page_title="Comparador de KM", layout="wide")
 
-# 2. Carregar os dados
-df_passado = pd.read_excel(nome_passado) # Use pd.read_csv se for CSV
-df_presente = pd.read_excel(nome_presente)
+st.title("📊 Comparador de Quilometragem")
+st.markdown("Suba as planilhas para identificar o aumento de KM por ponto de medição.")
 
-# 3. Defina os nomes das colunas (Ajuste aqui se for diferente na sua planilha)
-col_placa = 'Placa'
-col_km = 'Quilometragem'
-col_ponto = 'Ponto de Medicao'
+# --- CONFIGURAÇÃO DAS COLUNAS NA BARRA LATERAL ---
+st.sidebar.header("⚙️ Nomes das Colunas")
+st.sidebar.write("Ajuste se os nomes na sua planilha forem diferentes:")
+col_placa = st.sidebar.text_input("Coluna da Placa", "Placa")
+col_ponto = st.sidebar.text_input("Coluna do Ponto", "Ponto de Medicao")
+col_km = st.sidebar.text_input("Coluna da KM", "Quilometragem")
 
-# 4. Lógica de Comparação
-df_a = df_passado[[col_placa, col_ponto, col_km]].rename(columns={col_km: 'KM_Anterior'})
-df_b = df_presente[[col_placa, col_km]].rename(columns={col_km: 'KM_Atual'})
+# --- ÁREA DE UPLOAD ---
+col1, col2 = st.columns(2)
+with col1:
+    file_passado = st.file_uploader("📂 Planilha DIA ANTERIOR", type=['csv', 'xlsx'])
+with col2:
+    file_presente = st.file_uploader("📂 Planilha DIA ATUAL", type=['csv', 'xlsx'])
 
-# Cruza os dados pela Placa
-df_final = pd.merge(df_b, df_a, on=col_placa, how='inner')
-df_final['Diferenca_KM'] = df_final['KM_Atual'] - df_final['KM_Anterior']
+# --- LÓGICA DE COMPARAÇÃO ---
+if file_passado and file_presente:
+    try:
+        # Função para ler os arquivos corretamente
+        def ler(file):
+            if file.name.endswith('.csv'): return pd.read_csv(file)
+            return pd.read_excel(file)
 
-# Exibir resultado
-print("\n--- RESULTADO DA COMPARAÇÃO ---")
-display(df_final[[col_placa, col_ponto, 'KM_Anterior', 'KM_Atual', 'Diferenca_KM']])
+        df_a = ler(file_passado)
+        df_b = ler(file_presente)
 
-# 5. Salvar resultado em um novo Excel
-df_final.to_excel('resultado_comparacao.xlsx', index=False)
-print("\nArquivo 'resultado_comparacao.xlsx' gerado com sucesso!")
+        # Seleciona e renomeia
+        df_a = df_a[[col_placa, col_ponto, col_km]].rename(columns={col_km: 'KM_Anterior', col_ponto: 'Ponto'})
+        df_b = df_b[[col_placa, col_km]].rename(columns={col_km: 'KM_Atual'})
+
+        # Cruza os dados
+        df_final = pd.merge(df_b, df_a, on=col_placa, how='inner')
+        df_final['Aumento_KM'] = df_final['KM_Atual'] - df_final['KM_Anterior']
+
+        # Reordenar para visualização
+        df_final = df_final[[col_placa, 'Ponto', 'KM_Anterior', 'KM_Atual', 'Aumento_KM']]
+
+        st.divider()
+        st.success("✅ Comparação realizada com sucesso!")
+
+        # Tabela interativa
+        st.dataframe(df_final, use_container_width=True)
+
+        # Botão de download
+        csv = df_final.to_csv(index=False).encode('utf-8-sig')
+        st.download_button("📥 Baixar Resultado em Excel (CSV)", csv, "comparativo_km.csv", "text/csv")
+
+    except Exception as e:
+        st.error(f"⚠️ Erro ao processar: Verifique se os nomes das colunas '{col_placa}', '{col_km}' e '{col_ponto}' estão corretos na sua planilha.")
