@@ -8,34 +8,23 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. CSS Blindado (Fundo Escuro, Bordas Pretas e Cabeçalho Branco Forte)
+# 2. CSS Blindado (Forçando cabeçalho e bordas)
 st.markdown("""
     <style>
     .stApp { background-color: #0e1117 !important; }
     
-    /* Cards de métricas */
-    div[data-testid="stMetric"] {
-        background-color: #1e293b !important;
-        border: 2px solid #38bdf8 !important;
-        border-radius: 12px !important;
-    }
-    div[data-testid="stMetricValue"] > div { color: #38bdf8 !important; }
-    div[data-testid="stMetricLabel"] > label { color: #ffffff !important; font-weight: bold; }
-
-    /* Estilo do Cabeçalho da Tabela (Nomes das Colunas) */
-    thead tr th {
-        background-color: #1f2937 !important;
+    /* Forçar cabeçalho com texto branco puro e negrito */
+    [data-testid="stTable"] thead tr th, 
+    [data-testid="stDataFrame"] div[role="columnheader"] p {
         color: #ffffff !important;
         font-weight: 900 !important;
-        font-size: 16px !important;
-        border: 1px solid #000000 !important;
+        font-size: 17px !important;
     }
 
-    /* Estilo Geral da Tabela para aceitar bordas */
+    /* Ajuste para garantir que a tabela aceite as bordas pretas */
     [data-testid="stDataFrame"] {
-        background-color: #ffffff !important;
+        border: 2px solid #000000 !important;
         border-radius: 8px !important;
-        padding: 2px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -48,7 +37,7 @@ with st.sidebar:
     col_ponto = st.text_input("📍 Nome da Coluna Ponto", "Ponto de Medição")
     col_km = st.text_input("🔢 Nome da Coluna KM", "Odômetro (KM)")
     st.divider()
-    st.caption("Versão 9.0 - Grid & High White Header")
+    st.caption("Versão 10.0 - Ultra Grid & White Header")
 
 # 4. Cabeçalho
 st.title("🚛 Dashboard: Comparativo de Rodagem")
@@ -89,29 +78,38 @@ if file_passado and file_presente:
         m3.metric("Média", f"{df_res['Diferença (KM)'].mean():.1f}")
         m4.metric("Máximo", f"{df_res['Diferença (KM)'].max()}")
 
-        # 6. Tabela com BORDAS PRETAS VERTICAIS
+        # 6. Tabela com BORDAS E CABEÇALHO FORÇADOS
         st.markdown("### 📋 Relatório Detalhado")
         
         lista_cores = ['#D1E9FF', '#D1FFD6', '#FFE4D1', '#FFF9D1']
 
-        def aplicar_estilo_grid(row):
+        def aplicar_estilo_total(row):
             cor_fundo = lista_cores[int(row.name) % len(lista_cores)]
-            # Adicionado border-left e border-right para separar as colunas com preto puro
-            return [f'background-color: {cor_fundo}; color: #000000; font-weight: bold; border: 1.5px solid #000000'] * len(row)
+            # Usando border-right e border-bottom para criar a grade preta
+            style = [
+                f'background-color: {cor_fundo}; color: #000000; font-weight: bold; '
+                f'border-right: 2px solid #000000; border-bottom: 2px solid #000000; '
+                f'border-left: 2px solid #000000; border-top: 2px solid #000000;'
+                for _ in row
+            ]
+            return style
 
-        def style_diferenca_grid(val):
+        def style_diferenca(val):
             color = '#E60000' if val < 0 else '#006400' 
-            # A coluna de diferença também mantém a borda preta
-            return f'color: {color}; font-weight: 900; font-size: 18px; border: 1.5px solid #000000'
+            return f'color: {color}; font-weight: 900; font-size: 18px; border: 2px solid #000000;'
 
+        # Criando o estilo e aplicando propriedades de cabeçalho via Pandas Styler
         df_style = df_res[['Placa', 'Ponto', 'Anterior', 'Atual', 'Diferença (KM)']].style \
-            .apply(aplicar_estilo_grid, axis=1) \
-            .map(style_diferenca_grid, subset=['Diferença (KM)'])
+            .apply(aplicar_estilo_total, axis=1) \
+            .map(style_diferenca, subset=['Diferença (KM)']) \
+            .set_table_styles([
+                {'selector': 'th', 'props': [('background-color', '#1f2937'), ('color', 'white'), ('font-weight', 'bold'), ('border', '2px solid black')]}
+            ])
 
         st.dataframe(df_style, use_container_width=True, height=600)
         
         csv = df_res.to_csv(index=False).encode('utf-8-sig')
-        st.download_button("📥 BAIXAR RELATÓRIO", csv, "relatorio_grid.csv", "text/csv", use_container_width=True)
+        st.download_button("📥 BAIXAR RELATÓRIO", csv, "relatorio_frota.csv", "text/csv", use_container_width=True)
 
     except Exception as e:
         st.error(f"Erro: {e}")
