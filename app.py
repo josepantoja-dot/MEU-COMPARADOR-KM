@@ -8,16 +8,49 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Estilo CSS para o Dashboard (Fundo Escuro e Cards)
+# 2. Estilo CSS "Blindado" para forçar o Modo Escuro e cards Pro
 st.markdown("""
     <style>
-    .main { background-color: #0e1117; color: white; }
-    .stMetric { background-color: #1e293b; padding: 15px; border-radius: 10px; border: 1px solid #334155; }
-    [data-testid="stMetricValue"] > div { color: #38bdf8; }
-    [data-testid="stMetricLabel"] > label { color: #94a3b8; }
-    .stFileUploader { background-color: #1e293b; border-radius: 10px; padding: 10px; border: 1px dashed #38bdf8; }
-    /* Estilo para garantir que o texto da tabela seja legível */
-    [data-testid="stDataFrame"] { background-color: white; border-radius: 10px; }
+    /* Força o fundo escuro em toda a aplicação */
+    .stApp {
+        background-color: #0e1117 !not(!)important;
+        color: #fafafa !not(!)important;
+    }
+    
+    /* Títulos e textos normais */
+    h1, h2, h3, h4, h5, h6, p, label, .stMarkdown {
+        color: #fafafa !not(!)important;
+    }
+
+    /* Estilização agressiva dos cards de métricas */
+    div[data-testid="stMetricValue"] {
+        background-color: #1e293b !not(!)important;
+        padding: 20px !not(!)important;
+        border-radius: 12px !not(!)important;
+        border: 1px solid #334155 !not(!)important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !not(!)important;
+    }
+    div[data-testid="stMetricValue"] > div {
+        color: #38bdf8 !not(!)important; /* Cor azul neon para o número */
+        font-weight: bold !not(!)important;
+    }
+    div[data-testid="stMetricLabel"] > label {
+        color: #94a3b8 !not(!)important; /* Cor cinza suave para o rótulo */
+        font-size: 1.1rem !not(!)important;
+    }
+
+    /* Estilização da área de upload */
+    .stFileUploader {
+        background-color: #1e293b !not(!)important;
+        border-radius: 12px !not(!)important;
+        padding: 15px !not(!)important;
+        border: 2px dashed #38bdf8 !not(!)important;
+    }
+    
+    /* Garante que o texto da sidebar seja legível */
+    .css-1634h7z, .css-1kyx6g4 {
+        color: #fafafa !not(!)important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
