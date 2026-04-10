@@ -8,7 +8,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. CSS Blindado (Modo Escuro e Tabela de Alto Contraste)
+# 2. CSS Blindado (Fundo Escuro, Bordas Pretas e Cabeçalho Branco Forte)
 st.markdown("""
     <style>
     .stApp { background-color: #0e1117 !important; }
@@ -22,14 +22,20 @@ st.markdown("""
     div[data-testid="stMetricValue"] > div { color: #38bdf8 !important; }
     div[data-testid="stMetricLabel"] > label { color: #ffffff !important; font-weight: bold; }
 
-    /* Forçar textos do site para branco */
-    h1, h2, h3, p, span, label { color: #ffffff !important; }
+    /* Estilo do Cabeçalho da Tabela (Nomes das Colunas) */
+    thead tr th {
+        background-color: #1f2937 !important;
+        color: #ffffff !important;
+        font-weight: 900 !important;
+        font-size: 16px !important;
+        border: 1px solid #000000 !important;
+    }
 
-    /* Estilo da Tabela */
+    /* Estilo Geral da Tabela para aceitar bordas */
     [data-testid="stDataFrame"] {
         background-color: #ffffff !important;
-        border-radius: 10px !important;
-        padding: 5px;
+        border-radius: 8px !important;
+        padding: 2px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -42,11 +48,10 @@ with st.sidebar:
     col_ponto = st.text_input("📍 Nome da Coluna Ponto", "Ponto de Medição")
     col_km = st.text_input("🔢 Nome da Coluna KM", "Odômetro (KM)")
     st.divider()
-    st.caption("Versão 8.0 - Full Color Row")
+    st.caption("Versão 9.0 - Grid & High White Header")
 
 # 4. Cabeçalho
 st.title("🚛 Dashboard: Comparativo de Rodagem")
-st.write("Análise automática com linhas coloridas inteiriças.")
 
 # 5. Área de Upload
 c1, c2 = st.columns(2)
@@ -84,32 +89,29 @@ if file_passado and file_presente:
         m3.metric("Média", f"{df_res['Diferença (KM)'].mean():.1f}")
         m4.metric("Máximo", f"{df_res['Diferença (KM)'].max()}")
 
-        # 6. Tabela com CORES INTEIRAS
+        # 6. Tabela com BORDAS PRETAS VERTICAIS
         st.markdown("### 📋 Relatório Detalhado")
         
-        # Paleta de cores VIBRANTES
         lista_cores = ['#D1E9FF', '#D1FFD6', '#FFE4D1', '#FFF9D1']
 
-        def aplicar_estilo_total(row):
+        def aplicar_estilo_grid(row):
             cor_fundo = lista_cores[int(row.name) % len(lista_cores)]
-            # Agora aplicamos a cor de fundo em TODAS as células da linha uniformemente
-            return [f'background-color: {cor_fundo}; color: #000000; font-weight: bold; border: 1px solid #333333'] * len(row)
+            # Adicionado border-left e border-right para separar as colunas com preto puro
+            return [f'background-color: {cor_fundo}; color: #000000; font-weight: bold; border: 1.5px solid #000000'] * len(row)
 
-        def style_texto_diferenca(val):
-            # Cor do texto baseada no valor (Verde ou Vermelho)
-            # Removi o background-color: #ffffff daqui para ele herdar o da linha
+        def style_diferenca_grid(val):
             color = '#E60000' if val < 0 else '#006400' 
-            return f'color: {color}; font-weight: 900; font-size: 18px;'
+            # A coluna de diferença também mantém a borda preta
+            return f'color: {color}; font-weight: 900; font-size: 18px; border: 1.5px solid #000000'
 
-        # Estilização
         df_style = df_res[['Placa', 'Ponto', 'Anterior', 'Atual', 'Diferença (KM)']].style \
-            .apply(aplicar_estilo_total, axis=1) \
-            .map(style_texto_diferenca, subset=['Diferença (KM)'])
+            .apply(aplicar_estilo_grid, axis=1) \
+            .map(style_diferenca_grid, subset=['Diferença (KM)'])
 
         st.dataframe(df_style, use_container_width=True, height=600)
         
         csv = df_res.to_csv(index=False).encode('utf-8-sig')
-        st.download_button("📥 BAIXAR RELATÓRIO", csv, "relatorio_frota_colorido.csv", "text/csv", use_container_width=True)
+        st.download_button("📥 BAIXAR RELATÓRIO", csv, "relatorio_grid.csv", "text/csv", use_container_width=True)
 
     except Exception as e:
         st.error(f"Erro: {e}")
