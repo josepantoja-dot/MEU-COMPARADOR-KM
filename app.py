@@ -42,11 +42,11 @@ with st.sidebar:
     col_ponto = st.text_input("📍 Nome da Coluna Ponto", "Ponto de Medição")
     col_km = st.text_input("🔢 Nome da Coluna KM", "Odômetro (KM)")
     st.divider()
-    st.caption("Versão 7.0 - High Contrast Colors")
+    st.caption("Versão 8.0 - Full Color Row")
 
 # 4. Cabeçalho
 st.title("🚛 Dashboard: Comparativo de Rodagem")
-st.write("Análise automática com cores de alto contraste para facilitar a visualização.")
+st.write("Análise automática com linhas coloridas inteiriças.")
 
 # 5. Área de Upload
 c1, c2 = st.columns(2)
@@ -84,31 +84,32 @@ if file_passado and file_presente:
         m3.metric("Média", f"{df_res['Diferença (KM)'].mean():.1f}")
         m4.metric("Máximo", f"{df_res['Diferença (KM)'].max()}")
 
-        # 6. Tabela com CORES FORTES
+        # 6. Tabela com CORES INTEIRAS
         st.markdown("### 📋 Relatório Detalhado")
         
-        # Paleta de cores VIBRANTES (Azul, Verde, Laranja, Amarelo)
+        # Paleta de cores VIBRANTES
         lista_cores = ['#D1E9FF', '#D1FFD6', '#FFE4D1', '#FFF9D1']
 
-        def aplicar_estilo_forte(row):
+        def aplicar_estilo_total(row):
             cor_fundo = lista_cores[int(row.name) % len(lista_cores)]
-            # Texto preto e em negrito para aguentar o fundo forte
-            return [f'background-color: {cor_fundo}; color: #000000; font-weight: bold; border: 1px solid #000000'] * len(row)
+            # Agora aplicamos a cor de fundo em TODAS as células da linha uniformemente
+            return [f'background-color: {cor_fundo}; color: #000000; font-weight: bold; border: 1px solid #333333'] * len(row)
 
-        def style_diff_forte(val):
-            # Cor para a Diferença sobre fundo branco
-            color = '#FF0000' if val < 0 else '#008000' 
-            return f'background-color: #ffffff; color: {color}; font-weight: 900; font-size: 16px; border: 2px solid {color}'
+        def style_texto_diferenca(val):
+            # Cor do texto baseada no valor (Verde ou Vermelho)
+            # Removi o background-color: #ffffff daqui para ele herdar o da linha
+            color = '#E60000' if val < 0 else '#006400' 
+            return f'color: {color}; font-weight: 900; font-size: 18px;'
 
         # Estilização
         df_style = df_res[['Placa', 'Ponto', 'Anterior', 'Atual', 'Diferença (KM)']].style \
-            .apply(aplicar_estilo_forte, axis=1) \
-            .map(style_diff_forte, subset=['Diferença (KM)'])
+            .apply(aplicar_estilo_total, axis=1) \
+            .map(style_texto_diferenca, subset=['Diferença (KM)'])
 
         st.dataframe(df_style, use_container_width=True, height=600)
         
         csv = df_res.to_csv(index=False).encode('utf-8-sig')
-        st.download_button("📥 BAIXAR RELATÓRIO", csv, "relatorio_cores_fortes.csv", "text/csv", use_container_width=True)
+        st.download_button("📥 BAIXAR RELATÓRIO", csv, "relatorio_frota_colorido.csv", "text/csv", use_container_width=True)
 
     except Exception as e:
         st.error(f"Erro: {e}")
