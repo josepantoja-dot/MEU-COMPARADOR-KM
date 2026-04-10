@@ -81,16 +81,16 @@ if file_passado and file_presente:
         m3.metric("Média por Veículo", f"{df_res['Diferença (KM)'].mean():,.1f} km")
         m4.metric("Maior Rodagem", f"{df_res['Diferença (KM)'].max():,.0f} km")
 
-        # Tabela Final
+       # Tabela Final
         st.markdown("### 📋 Relatório Detalhado")
         
-        # Colorir a coluna de diferença
+        # Colorir a coluna de diferença (Aqui mudamos de applymap para map)
         def color_km(val):
             color = '#ff4b4b' if val < 0 else '#2ecc71'
             return f'color: {color}; font-weight: bold'
 
         st.dataframe(
-            df_res[[col_placa, 'Ponto', 'Anterior', 'Atual', 'Diferença (KM)']].style.applymap(color_km, subset=['Diferença (KM)']),
+            df_res[[col_placa, 'Ponto', 'Anterior', 'Atual', 'Diferença (KM)']].style.map(color_km, subset=['Diferença (KM)']),
             use_container_width=True,
             height=400
         )
